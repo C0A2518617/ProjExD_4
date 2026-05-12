@@ -141,14 +141,14 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, angle0=0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle = math.degrees(math.atan2(-self.vy, self.vx)) + angle0  # ビームの角度を計算
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 1.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -156,6 +156,7 @@ class Beam(pg.sprite.Sprite):
         self.rect.centery = bird.rect.centery+bird.rect.height*self.vy
         self.rect.centerx = bird.rect.centerx+bird.rect.width*self.vx
         self.speed = 10
+        #print(f"angle:{angle}")
 
     def update(self):
         """
@@ -166,6 +167,28 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+class NeoBeam(Beam):
+    """
+    複数方向に放つビームに関するクラス
+    """
+    def __init__(self, bird: Bird, num: int):
+        super().__init__(bird)
+        self.angle0 = -50
+        self.angles = list(range(-50, 51, 100//(num-1)))  # -50度から50度までの範囲でnum個の角度を生成
+        self.num = num
+
+    def gen_beams(self, bird: Bird):
+        """
+        ビームを複数方向に放つ
+        引数 bird：ビームを放つこうかとん
+        """
+        #print("gen_beams called")
+        beams = pg.sprite.Group()
+        for i in range(self.num):
+            angle0 = self.angles[i]
+            beams.add(Beam(bird, angle0))
+            print(f"Beam {i} generated with angle0={angle0}")
+        return beams
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -262,7 +285,10 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.add(Beam(bird))
+                if event.mod & pg.KMOD_SHIFT: #発動条件：左Shiftキーを押下しながらスペースキー
+                    beams.add(*NeoBeam(bird, 8).gen_beams(bird).sprites())  # Shift+スペースで複数方向にビームを放つ
+                else:
+                    beams.add(Beam(bird))  # スペースキーでビームを放つ
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
