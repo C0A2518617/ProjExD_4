@@ -172,9 +172,7 @@ class NeoBeam(Beam):
     複数方向に放つビームに関するクラス
     """
     def __init__(self, bird: Bird, num: int):
-        super().__init__(bird)
-        self.angle0 = -50
-        self.angles = list(range(-50, 51, 100//(num-1)))  # -50度から50度までの範囲でnum個の角度を生成
+        self.bird = bird
         self.num = num
 
     def gen_beams(self, bird: Bird):
@@ -182,12 +180,15 @@ class NeoBeam(Beam):
         ビームを複数方向に放つ
         引数 bird：ビームを放つこうかとん
         """
-        #print("gen_beams called")
-        beams = pg.sprite.Group()
+        beams = []
+        if self.num == 1:
+            angles = [0]
+        else:
+            step = 100 // (self.num - 1)
+            angles = list(range(-50, 51, step)) # ビームの角度を-50度から50度まで等間隔で生成
         for i in range(self.num):
-            angle0 = self.angles[i]
-            beams.add(Beam(bird, angle0))
-            print(f"Beam {i} generated with angle0={angle0}")
+            angle0 = angles[i]
+            beams.append(Beam(bird, angle0))
         return beams
 
 class Explosion(pg.sprite.Sprite):
@@ -284,9 +285,9 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
-            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                if event.mod & pg.KMOD_SHIFT: #発動条件：左Shiftキーを押下しながらスペースキー
-                    beams.add(*NeoBeam(bird, 8).gen_beams(bird).sprites())  # Shift+スペースで複数方向にビームを放つ
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE: #スペースキーが押されたとき
+                if event.mod & pg.KMOD_LSHIFT: #発動条件：左Shiftキーを押下しながらスペースキー
+                    beams.add(*NeoBeam(bird, 8).gen_beams(bird))  # Shift+スペースで複数方向にビームを放つ
                 else:
                     beams.add(Beam(bird))  # スペースキーでビームを放つ
         screen.blit(bg_img, [0, 0])
